@@ -4,7 +4,9 @@
 // every prompt will inc count turn
 // we save 
 
-import { PrismaClient } from '@prisma/client';
+
+import aiService from './aiService';
+import prisma from './prismaClient';
 
 class GameService {
     async createGame(playerOneId, templateId) {
@@ -43,7 +45,7 @@ class GameService {
             include: { template: true }
         });
 
-        //once this error is caught, send a message in the frontend to wait for their opponent
+        //Once this error is caught, send a message in the frontend to wait for their opponent
         const turnCount = await this.getTurnCount(gameId, playerId, game.phase);
         if (turnCount >= game.maxTurnsPerPhase) {
             throw new Error('Turn limit reached');
@@ -76,7 +78,7 @@ class GameService {
             throw new Error('Game not in progress');
         }
 
-        //need to do something about spaces or white space characters can probably trim
+        //Need to do something about spaces or white space characters can probably trim
         if (message.length > game.maxCharsPerMessage) {
             throw new Error(`Message exceeds ${game.maxCharsPerMessage} characters`);
         }
@@ -103,7 +105,7 @@ class GameService {
         if (game.phase !== 'DEFENSE') return;
 
 
-        //may have to change something here specifically for isdefendingboolean
+        //May have to change something here specifically for isdefendingboolean
         const p1Turns = await this.getTurnCount(gameId, game.playerOneId, 'DEFENSE');
         const p2Turns = await this.getTurnCount(gameId, game.playerTwoId, 'DEFENSE');
 
@@ -117,7 +119,7 @@ class GameService {
             include: { template: true }
         });
 
-        //should save costs? only if summary is actually shorter than the entire list of prompt and response
+        //Should save costs? Only if summary is actually shorter than the entire list of prompt and response
         const p1Summary = await this.generateDefenseSummary(gameId, game.playerOneId);
         const p2Summary = await this.generateDefenseSummary(gameId, game.playerTwoId);
         await prisma.game.update({
@@ -138,7 +140,7 @@ class GameService {
             },
             orderBy: { turnNumber: 'asc' }
         });
-        //summarize defense, prompt and response list should be sent to wrapper "Can you summarize"
+        //Summarize defense, prompt and response list should be sent to wrapper "Can you summarize"
         return await aiService.summarizeDefense(turns);
 
     }
@@ -152,7 +154,7 @@ class GameService {
         const p1AttackTurns = await this.getTurnCount(gameId, game.playerOneId, 'ATTACK');
         const p2AttackTurns = await this.getTurnCount(gameId, game.playerTwoId, 'ATTACK');
 
-        // both players finished their attack turns
+        // Both players finished their attack turns
         if (p1AttackTurns >= game.maxTurnsPerPhase && p2AttackTurns >= game.maxTurnsPerPhase) {
             await this.determineWinner(gameId);
         }
@@ -162,8 +164,8 @@ class GameService {
         const game = await prisma.game.findUnique({
             where: { id: gameId }
         });
-        //get all the attack turns and then check if the users win
-        //must achieve some goal like revealing the secret or convincing ai to do something
+        //Get all the attack turns and then check if the users win
+        //Must achieve some goal like revealing the secret or convincing ai to do something
 
         const p1AttackTurns = await prisma.gameTurn.findMany({
             where: {
@@ -204,9 +206,11 @@ class GameService {
             endReason = 'SECRET_REVEALED';
         } else if (p1Succeeded && p2Succeeded) {
             // Both broke it - it's a draw (or you could have tiebreaker logic)
+            winnerId = undefined;
             endReason = 'DRAW';
         } else {
             // Neither broke it - both AIs held strong (draw)
+            winnerId = undefined;
             endReason = 'DRAW';
         }
         await prisma.game.update({
@@ -219,7 +223,7 @@ class GameService {
         });
 
     }
-    //can fully implement later, users can look at history of  games wins and losses
+    //Can fully implement later, users can look at history of games wins and losses
     async getGame(gameId) {
         return await prisma.game.findUnique({
             where: { id: gameId },
@@ -234,7 +238,7 @@ class GameService {
         });
     }
 
-    //use of templates - madlib style so we can keep some consistency
+    //Use of templates - Madlib style so we can keep some consistency
     generateCharacter(template) {
         // TODO: Use template to generate random character
         return "A suspicious guard";
