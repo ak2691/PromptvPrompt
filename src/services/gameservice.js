@@ -9,35 +9,29 @@ import aiService from './aiService';
 import prisma from './prismaClient';
 
 class GameService {
-    async createGame(playerOneId, templateId) {
-        const template = await prisma.scenarioTemplate.findUnique({
-            where: { id: templateId }
-        });
+    async createGameFromMatch(playerOneId, playerOneId) {
+
 
         // Generate character and secret
+        // Need to generate random template first
+        const template = await this.generateTemplate();
+        const templateId = template[0].id;
         const character = this.generateCharacter(template);
         const secret = this.generateSecret(template);
 
         return await prisma.game.create({
             data: {
                 playerOneId,
+                playerTwoId,
                 templateId,
                 generatedCharacter: character,
                 generatedSecret: secret,
-                status: 'WAITING_FOR_PLAYER',
+                status: 'IN_PROGRESS',
                 phase: 'DEFENSE'
             }
         });
     }
-    async joinGame(gameId, playerTwoId) {
-        return await prisma.game.update({
-            where: { id: gameId },
-            data: {
-                playerTwoId,
-                status: 'IN_PROGRESS'
-            }
-        });
-    }
+
 
     async submitTurn(gameId, playerId, message) {
         const game = await prisma.game.findUnique({
@@ -248,6 +242,16 @@ class GameService {
     generateSecret(template) {
         // TODO: Use template to generate random secret
         return "The password is blue42";
+    }
+    async generateTemplate() {
+        const count = await prisma.scenarioTemplate.count();
+        const random = Math.floor(Math.random() * count);
+        const template = await prisma.template.findMany({
+            skip: random,
+            take: 1,
+            select: { id: true }  // or templateId, depending on your schema
+        });
+        return template;
     }
 }
 export default new GameService();
