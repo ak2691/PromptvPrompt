@@ -1,9 +1,17 @@
 FROM node:25-alpine
 
-COPY package.json /backend/
-COPY src /backend/
-
 WORKDIR /backend
+
+# Install dependencies
+COPY package.json ./
 RUN npm install
 
-CMD ["node", "app.js"]
+
+COPY prisma ./prisma/
+RUN npx prisma generate
+
+COPY src ./src/
+
+EXPOSE 3000
+
+CMD ["node", "src/app.js"]
