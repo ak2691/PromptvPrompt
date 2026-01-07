@@ -7,17 +7,17 @@ export default function setupGameSocket(io) {
             const match = matchmakingService.addPlayer(userId, socket.id);
 
             if (match) {
-                /*const game = await GameService.createGameFromMatch(
+                const game = await GameService.createGameFromMatch(
                     match.playerOne.playerId,
                     match.playerTwo.playerId,
-                );*/
+                );
 
-                //io.to(match.playerOne.socketId).emit('gameFound', game);
-                //io.to(match.playerTwo.socketId).emit('gameFound', game);
+                io.to(match.playerOne.socketId).emit('gameFound', game);
+                io.to(match.playerTwo.socketId).emit('gameFound', game);
 
                 //manual testing
-                io.to(match.playerOne.socketId).emit('gameFound', { gameId: 1, userId: match.playerOne.playerId });
-                io.to(match.playerTwo.socketId).emit('gameFound', { gameId: 1, userId: match.playerTwo.playerId });
+                //io.to(match.playerOne.socketId).emit('gameFound', { gameId: 1, userId: match.playerOne.playerId });
+                //io.to(match.playerTwo.socketId).emit('gameFound', { gameId: 1, userId: match.playerTwo.playerId });
             } else {
                 socket.emit('queueJoined', { position: matchmakingService.queue.length });
             }
