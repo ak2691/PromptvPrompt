@@ -27,9 +27,9 @@ class GameService {
                     templateId,
                     generatedCharacter: character,
                     generatedSecret: secret,
-                    status: 'ATTACK_PHASE',
+                    status: 'DEFENSE_PHASE',
                     //testing attack only first
-                    phase: 'ATTACK'
+                    phase: 'DEFENSE'
                 }
             });
         } catch (error) {
@@ -38,7 +38,10 @@ class GameService {
         }
 
     }
-
+    static async getPhase(gameId) {
+        const game = await prisma.game.findUnique({ where: { id: gameId } });
+        return game.phase;
+    }
 
     static async submitTurn(gameId, playerId, message) {
         const game = await prisma.game.findUnique({
@@ -72,12 +75,12 @@ class GameService {
             }
         });
 
-        //await this.checkPhaseTransition(gameId);
+        await this.checkPhaseTransition(gameId);
         await this.checkGameEnd(gameId);
         return turn;
     }
     static validateTurn(game, playerId, message) {
-        if (game.status !== 'IN_PROGRESS') {
+        if (game.status !== 'ATTACK_PHASE' && game.status !== 'DEFENSE_PHASE') {
             throw new Error('Game not in progress');
         }
 
@@ -100,6 +103,13 @@ class GameService {
             }
         });
     }
+
+    static async getTurns(gameId, playerId, phase) {
+        return await prisma.gameTurn.findMany({
+            where: { gameId, playerId, phase },
+            orderBy: { turnNumber: 'asc' }
+        })
+    }
     static async checkPhaseTransition(gameId) {
         const game = await prisma.game.findUnique({
             where: { id: gameId }
@@ -116,6 +126,7 @@ class GameService {
             await this.transitionToAttack(gameId);
         }
     }
+
     static async transitionToAttack(gameId) {
         const game = await prisma.game.findUnique({
             where: { id: gameId },
@@ -125,12 +136,24 @@ class GameService {
         //Should save costs? Only if summary is actually shorter than the entire list of prompt and response
         const p1Summary = await this.generateDefenseSummary(gameId, game.playerOneId);
         const p2Summary = await this.generateDefenseSummary(gameId, game.playerTwoId);
+
         await prisma.game.update({
             where: { id: gameId },
             data: {
                 phase: 'ATTACK',
                 playerOneDefenseSummary: p1Summary,
-                playerTwoDefenseSummary: p2Summary
+                playerTwoDefenseSummary: p2Summary,
+                isTransitioning: true,
+                transitionEndsAt: new Date(Date.now() + 5000)
+            }
+        });
+    }
+    static async endTransition(gameId) {
+        return await prisma.game.update({
+            where: { id: gameId },
+            data: {
+                isTransitioning: false,
+                transitionEndsAt: null
             }
         });
     }
@@ -144,7 +167,10 @@ class GameService {
             orderBy: { turnNumber: 'asc' }
         });
         //Summarize defense, prompt and response list should be sent to wrapper "Can you summarize"
-        return await aiService.summarizeDefense(turns);
+        //return await aiService.summarizeDefense(turns);
+
+        //
+        return turns[0].playerMessage;
 
     }
     static async checkGameEnd(gameId) {
@@ -233,8 +259,6 @@ class GameService {
         return await prisma.game.findUnique({
             where: { id: gameId },
             include: {
-                playerOne: true,
-                playerTwo: true,
                 template: true,
                 turns: {
                     orderBy: { createdAt: 'asc' }

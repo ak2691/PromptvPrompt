@@ -1,21 +1,23 @@
 import useSocket from "../socket/sockethandler";
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useSocketContext } from "../socket/socketcontext";
 export default function Matchmaking() {
-    const { socket, isConnected } = useSocket('http://localhost:3000');
+    const { socket, isConnected } = useSocketContext();
     const [userId, setUserId] = useState('');
     const navigate = useNavigate();
     useEffect(() => {
         if (!socket) return;
+        if (!userId) return;
 
         socket.on('gameFound', (data) => {
-            navigate(`/game/${data.gameId}?userId=${userId}`);
+            navigate(`/game/${data.id}?userId=${userId}`);
         });
 
         return () => {
             socket.off('gameFound');
         };
-    }, [socket]);
+    }, [socket, userId]);
 
     const handleJoinQueue = () => {
         if (userId.trim()) {

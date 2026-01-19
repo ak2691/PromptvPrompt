@@ -25,6 +25,14 @@ export default function setupGameSocket(io) {
                 socket.emit('queueJoined', { position: matchmakingService.queue.length });
             }
         });
+        socket.on('joinGameRoom', async ({ gameId, userId }) => {
+            const game = await GameService.getGame(gameId);
+            if (userId === game.playerOneId || userId === game.playerTwoId) {
+                socket.join(`game-${gameId}`);
+                console.log(`Socket ${socket.id} joined game-${gameId}`);
+            }
+
+        });
     })
 }
 

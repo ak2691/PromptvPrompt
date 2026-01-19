@@ -3,10 +3,16 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import setupGameSocket from './sockets/gamesocket.js';
 import router from './routes/gameRoutes.js';
-
+import cors from 'cors';
 
 const app = express();
 
+app.use(express.json());
+
+app.use(cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"]
+}));
 const server = createServer(app);
 
 const io = new Server(server, {

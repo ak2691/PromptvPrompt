@@ -4,6 +4,8 @@ export default async function fetchGameState(gameId, userId) {
     if (!response.ok) {
         throw new Error('Failed to fetch game state');
     }
+    const data = await response.json();
 
-    return response.json();
+
+    return data;
 }

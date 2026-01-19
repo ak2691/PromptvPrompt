@@ -7,19 +7,21 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import Matchmaking from './components/ui/Matchmaking';
 import Home from './components/ui/Home';
 import GamePage from './components/ui/GamePage';
+import { SocketProvider } from './components/socket/socketcontext';
 
 function App() {
 
 
   return (
     <>
-      <Routes>
+      <SocketProvider>
+        <Routes>
 
-        <Route path="/" element={<Home />} />
-        <Route path="/matchmaking" element={<Matchmaking />} />
-        <Route path="/game:gameId" element={<GamePage />} />
-      </Routes>
-
+          <Route path="/" element={<Home />} />
+          <Route path="/matchmaking" element={<Matchmaking />} />
+          <Route path="/game/:gameId" element={<GamePage />} />
+        </Routes>
+      </SocketProvider>
     </>
   );
 }
