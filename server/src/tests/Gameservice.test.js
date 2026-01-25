@@ -89,7 +89,7 @@ describe('GameService', () => {
 
         it('should throw error if message exceeds character limit', () => {
             const game = {
-                status: 'IN_PROGRESS',
+                status: 'ATTACK_PHASE',
                 maxCharsPerMessage: 250,
                 playerOneId: 'player-1',
                 playerTwoId: 'player-2',
@@ -104,7 +104,7 @@ describe('GameService', () => {
 
         it('should throw error if player is not part of the game', () => {
             const game = {
-                status: 'IN_PROGRESS',
+                status: 'ATTACK_PHASE',
                 maxCharsPerMessage: 250,
                 playerOneId: 'player-1',
                 playerTwoId: 'player-2',
@@ -117,7 +117,7 @@ describe('GameService', () => {
 
         it('should not throw error for valid turn', () => {
             const game = {
-                status: 'IN_PROGRESS',
+                status: 'ATTACK_PHASE',
                 maxCharsPerMessage: 250,
                 playerOneId: 'player-1',
                 playerTwoId: 'player-2',
@@ -196,15 +196,19 @@ describe('GameService', () => {
             prismaMock.gameTurn.findMany.mockResolvedValue([]);
             aiServiceMock.summarizeDefense.mockResolvedValue('Summary');
             prismaMock.game.update.mockResolvedValue({});
-
+            const mockNow = 1000000000;
+            jest.spyOn(Date, 'now').mockReturnValue(mockNow);
             await GameService.checkPhaseTransition('game-1');
 
             expect(prismaMock.game.update).toHaveBeenCalledWith({
                 where: { id: 'game-1' },
                 data: {
+                    isTransitioning: true,
                     phase: 'ATTACK',
                     playerOneDefenseSummary: 'Summary',
                     playerTwoDefenseSummary: 'Summary',
+                    status: "ATTACK_PHASE",
+                    transitionEndsAt: new Date(mockNow + 5000)
                 },
             });
         });
@@ -317,9 +321,9 @@ describe('GameService', () => {
             expect(prismaMock.game.update).toHaveBeenCalledWith({
                 where: { id: 'game-1' },
                 data: {
-                    status: 'FINISHED',
+                    status: 'COMPLETED',
                     winnerId: 'player-1',
-                    endReason: 'SECRET_REVEALED',
+                    endReason: 'FULL_CONVICTION',
                 },
             });
         });
@@ -343,9 +347,9 @@ describe('GameService', () => {
             expect(prismaMock.game.update).toHaveBeenCalledWith({
                 where: { id: 'game-1' },
                 data: {
-                    status: 'FINISHED',
+                    status: 'COMPLETED',
                     winnerId: 'player-2',
-                    endReason: 'SECRET_REVEALED',
+                    endReason: 'FULL_CONVICTION',
                 },
             });
         });
@@ -369,8 +373,8 @@ describe('GameService', () => {
             expect(prismaMock.game.update).toHaveBeenCalledWith({
                 where: { id: 'game-1' },
                 data: {
-                    status: 'FINISHED',
-                    winnerId: undefined,
+                    status: 'COMPLETED',
+                    winnerId: 'neither',
                     endReason: 'DRAW',
                 },
             });
@@ -395,8 +399,8 @@ describe('GameService', () => {
             expect(prismaMock.game.update).toHaveBeenCalledWith({
                 where: { id: 'game-1' },
                 data: {
-                    status: 'FINISHED',
-                    winnerId: undefined,
+                    status: 'COMPLETED',
+                    winnerId: 'neither',
                     endReason: 'DRAW',
                 },
             });
@@ -412,7 +416,7 @@ describe('GameService', () => {
                 phase: 'DEFENSE',
                 maxTurnsPerPhase: 5,
                 maxCharsPerMessage: 250,
-                status: 'IN_PROGRESS',
+                status: 'DEFENSE_PHASE',
                 template: {},
             };
 
@@ -432,7 +436,7 @@ describe('GameService', () => {
                 phase: 'DEFENSE',
                 maxTurnsPerPhase: 5,
                 maxCharsPerMessage: 250,
-                status: 'IN_PROGRESS',
+                status: 'DEFENSE_PHASE',
                 template: {},
             };
 

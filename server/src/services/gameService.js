@@ -1,8 +1,4 @@
-// 5 turns
-// 250 character limit
-// player 1: count turn
-// every prompt will inc count turn
-// we save 
+
 
 
 import aiService from './aiService.js';
@@ -57,13 +53,13 @@ class GameService {
         }
 
 
-        /*const aiResponse = await aiService.getResponse(
+        const aiResponse = await aiService.getResponse(
             game,
             playerId,
             message,
             game.phase
-        );*/
-        const aiResponse = "Responded";
+        );
+        //const aiResponse = "Responded";
         const turn = await prisma.gameTurn.create({
             data: {
                 gameId,
@@ -140,6 +136,7 @@ class GameService {
         await prisma.game.update({
             where: { id: gameId },
             data: {
+                status: 'ATTACK_PHASE',
                 phase: 'ATTACK',
                 playerOneDefenseSummary: p1Summary,
                 playerTwoDefenseSummary: p2Summary,
@@ -167,10 +164,10 @@ class GameService {
             orderBy: { turnNumber: 'asc' }
         });
         //Summarize defense, prompt and response list should be sent to wrapper "Can you summarize"
-        //return await aiService.summarizeDefense(turns);
+        return await aiService.summarizeDefense(turns);
 
         //
-        return turns[0].playerMessage;
+        //return turns[0].playerMessage;
 
     }
     static async checkGameEnd(gameId) {
@@ -185,7 +182,7 @@ class GameService {
 
         // Both players finished their attack turns
         if (p1AttackTurns >= game.maxTurnsPerPhase && p2AttackTurns >= game.maxTurnsPerPhase) {
-            //await this.determineWinner(gameId);
+            await this.determineWinner(gameId);
             return true;
         }
         return false;
@@ -197,7 +194,8 @@ class GameService {
         });
         //Get all the attack turns and then check if the users win
         //Must achieve some goal like revealing the secret or convincing ai to do something
-
+        let winnerId = "none";
+        let endReason = "DRAW";
         const p1AttackTurns = await prisma.gameTurn.findMany({
             where: {
                 gameId,
@@ -231,23 +229,23 @@ class GameService {
 
         if (p1Succeeded && !p2Succeeded) {
             winnerId = game.playerOneId;
-            endReason = 'SECRET_REVEALED';
+            endReason = 'FULL_CONVICTION';
         } else if (p2Succeeded && !p1Succeeded) {
             winnerId = game.playerTwoId;
-            endReason = 'SECRET_REVEALED';
+            endReason = 'FULL_CONVICTION';
         } else if (p1Succeeded && p2Succeeded) {
             // Both broke it - it's a draw (or you could have tiebreaker logic)
-            winnerId = undefined;
+            winnerId = "neither";
             endReason = 'DRAW';
         } else {
             // Neither broke it - both AIs held strong (draw)
-            winnerId = undefined;
+            winnerId = "neither";
             endReason = 'DRAW';
         }
         await prisma.game.update({
             where: { id: gameId },
             data: {
-                status: 'FINISHED',
+                status: 'COMPLETED',
                 winnerId,
                 endReason
             }

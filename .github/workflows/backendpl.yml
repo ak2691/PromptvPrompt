@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'server/**'
+      - 'serverjava/**'
       - '.github/workflows/backendpl.yml'
   pull_request:
     branches: [ "main" ]
@@ -16,18 +16,16 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Use Node.js 22.x
-      uses: actions/setup-node@v4
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
       with:
-        node-version: 22.x
-        cache: 'npm'
-        cache-dependency-path: server/package-lock.json
-    - name : Installing dependencies
-      working-directory: ./server
-      run: npm ci
-    - name : Running tests
-      working-directory: ./server
-      run: npm test
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+    
+    - name: Run tests with Maven
+      working-directory: ./serverjava
+      run: mvn clean test
 
   docker:
     needs: test
@@ -49,7 +47,7 @@ jobs:
     - name: Build and push
       uses: docker/build-push-action@v6
       with:
-        context: ./server
+        context: ./serverjava
         push: true
         tags: |
           ${{ vars.DOCKERHUB_USERNAME }}/promptvsprompt:backend-latest

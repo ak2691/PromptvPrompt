@@ -2,7 +2,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import setupGameSocket from './sockets/gamesocket.js';
-import router from './routes/gameRoutes.js';
+import gameroutes from './routes/gameRoutes.js';
 import cors from 'cors';
 
 const app = express();
@@ -25,7 +25,7 @@ const io = new Server(server, {
 app.set('io', io);
 // Setup game socket handlers
 setupGameSocket(io);
-app.use('/api', router);
+app.use('/api', gameroutes);
 const PORT = 3000;
 
 server.listen(PORT, (error) => {

@@ -2,13 +2,13 @@ services:
   backend:
 
     #image: ak2691/promptvsprompt:backend-latest
-    build: ./server
+    build: ./serverjava
     container_name: backend
     restart: always
     env_file:
-      - ./server/.env
+      - ./serverjava/.env
     ports:
-      - "3000:3000"
+      - "8080:8080"
   frontend:
     #image: ak2691/promptvsprompt:frontend-latest
     build: ./client
@@ -42,5 +42,8 @@ services:
       - "5050:80"
     depends_on:
       - db
+
 volumes:
   postgres_data:
+
+

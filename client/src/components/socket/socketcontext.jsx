@@ -3,7 +3,7 @@ import useSocket from './sockethandler';
 const SocketContext = createContext(null);
 
 export function SocketProvider({ children }) {
-    const { socket, isConnected } = useSocket('http://localhost:3000');
+    const { socket, isConnected } = useSocket('http://localhost:8080');
 
     return (
         <SocketContext.Provider value={{ socket, isConnected }}>

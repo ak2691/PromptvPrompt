@@ -15,58 +15,61 @@ datasource db {
 
  
 }
-// model User {
-//   id                String    @id @default(uuid())
-//   email             String    @unique
-//   passwordHash      String
-//   isEmailVerified   Boolean   @default(false)
-//   verificationToken String?
-//   verificationExpiry DateTime?
-//   
-//   createdAt         DateTime  @default(now())
-//   updatedAt         DateTime  @updatedAt
-//   
-//   profile           UserProfile?
-//   refreshTokens     RefreshToken[]
-//   gamesAsPlayerOne  Game[]    @relation("PlayerOne")
-//   gamesAsPlayerTwo  Game[]    @relation("PlayerTwo")
-//   gameTurns         GameTurn[]
-// }
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  passwordHash      String
+  isEmailVerified   Boolean   @default(false)
+  verificationToken String?
+  verificationExpiry DateTime?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  profile           UserProfile?
+  refreshTokens     RefreshToken[]
+  gameTurns         GameTurn[]
+  
+  // Game relationships
+  playerOneGames    Game[]    @relation("PlayerOneGames")
+  playerTwoGames    Game[]    @relation("PlayerTwoGames")
+  wonGames          Game[]    @relation("WonGames")
+}
 
-// model UserProfile {
-//   id              String   @id @default(uuid())
-//   
-//   userId          String   @unique
-//   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-//   
-//   displayName     String?
-//   gamesPlayed     Int      @default(0)
-//   wins            Int      @default(0)
-//   losses          Int      @default(0)
-//   draws           Int      @default(0)
-//   
-//   // Daily game tracking - resets at midnight UTC
-//   dailyGamesPlayed Int     @default(0)
-//   lastGameDate     DateTime?
-//   
-//   createdAt       DateTime @default(now())
-//   updatedAt       DateTime @updatedAt
-// }
+model UserProfile {
+  id              String   @id @default(uuid())
+  
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  displayName     String?
+  gamesPlayed     Int      @default(0)
+  wins            Int      @default(0)
+  losses          Int      @default(0)
+  draws           Int      @default(0)
+  
+  // Daily game tracking - resets at midnight UTC
+  dailyGamesPlayed Int     @default(0)
+  lastGameDate     DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
 
-// model RefreshToken {
-//   id          String   @id @default(uuid())
-//   token       String   @unique
-//   
-//   userId      String
-//   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-//   
-//   expiresAt   DateTime
-//   createdAt   DateTime @default(now())
-//   
-//   // Optional: track device/session info
-//   userAgent   String?
-//   ipAddress   String?
-// }
+model RefreshToken {
+  id          String   @id @default(uuid())
+  token       String   @unique
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  
+  // Optional: track device/session info
+  userAgent   String?
+  ipAddress   String?
+}
 
 model ScenarioTemplate {
   id              String   @id @default(uuid())
@@ -96,7 +99,10 @@ model Game {
   
   // Players
   playerOneId String
+  playerOne User @relation("PlayerOneGames", fields: [playerOneId], references: [id])
+  
   playerTwoId String?
+  playerTwo User? @relation("PlayerTwoGames", fields: [playerTwoId], references: [id])
   
   // Scenario
   templateId String
@@ -122,6 +128,7 @@ model Game {
   
   // Win conditions
   winnerId String?
+  winner User? @relation("WonGames", fields: [winnerId], references: [id])
   endReason GameEndReason?
   
   // Timestamps
@@ -139,17 +146,15 @@ model GameTurn {
   id String @id @default(uuid())
   gameId String
   game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  
   playerId String
+  player User @relation(fields: [playerId], references: [id])
   
   phase GamePhase
   turnNumber Int
   
   playerMessage String
   aiResponse String
-  
-  // Attack phase scoring
-  convictionScore Int?
-  hpDamage Int?
   
   createdAt DateTime @default(now())
 }
@@ -166,7 +171,7 @@ model MatchmakingQueue {
 }
 
 enum GameStatus {
-  WAITING_FOR_PLAYER  // Created, waiting for opponent (matchmaking)
+  WAITING_FOR_PLAYER  // Waiting for second player
   DEFENSE_PHASE       // Both players preparing defenses
   ATTACK_PHASE        // Players taking turns attacking
   COMPLETED           // Game finished
@@ -179,9 +184,7 @@ enum GamePhase {
 }
 
 enum GameEndReason {
-  HP_DEPLETED         // One AI's HP hit 0
   FULL_CONVICTION     // AI was fully convinced (gave up secret)
-  CREDITS_EXHAUSTED   // Both players ran out of prompts
+  DRAW
   PLAYER_FORFEIT
-  TIMEOUT
 }

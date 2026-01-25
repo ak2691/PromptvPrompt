@@ -21,6 +21,8 @@ export default function GamePage() {
     const [myMessageCount, setMyMessageCount] = useState(0);
     const [opponentMessageCount, setOpponentMessageCount] = useState(0);
     const [gameComplete, setGameComplete] = useState(false);
+    const [winnerId, setWinnerId] = useState('');
+    const [endReason, setEndReason] = useState('');
     const [phase, setPhase] = useState('DEFENSE');
     const [messages, setMessages] = useState([]);
     const [results, setResults] = useState(null);
@@ -38,8 +40,11 @@ export default function GamePage() {
                 setOpponentMessageCount(data.opponentMessageCount);
                 setPhase(data.game.phase);
                 setGameComplete(data.isGameComplete);
-                console.log("CALLING LOAD GAME STATE");
-                console.log(data.transition.isTransitioning);
+                //console.log("CALLING LOAD GAME STATE");
+                //console.log(data.transition.isTransitioning);
+                if (data.isGameComplete) {
+                    setWinnerId(data.winnerId);
+                }
                 if (data.transition.isTransitioning) {
                     setIsTransitioning(true);
                     setCountdown(data.transition.countdown);
@@ -81,6 +86,7 @@ export default function GamePage() {
         });
         socket.on('gameComplete', (data) => {
             setGameComplete(true);
+            setWinnerId(data.winnerId);
             //setResults(data.finalState);
         });
         socket.on('transitionPhase', (data) => {
@@ -135,7 +141,7 @@ export default function GamePage() {
             ) : (
                 <div className="w-full max-w-2xl mx-auto p-4">
                     {/* Game Complete Banner */}
-                    {gameComplete && <GameCompleteBanner />}
+                    {gameComplete && <GameCompleteBanner winnerId={winnerId} />}
 
                     {/* Score Display */}
                     <ScoreDisplay
@@ -147,7 +153,7 @@ export default function GamePage() {
                     <ChatMessages messages={messages} />
 
                     {/* Turn Input Component */}
-                    <TurnInput onSubmit={handleSubmitTurn} disabled={myMessageCount >= 5 || gameComplete} />
+                    <TurnInput onSubmit={handleSubmitTurn} disabled={myMessageCount >= 2 || gameComplete} />
                 </div>
             )}
         </>
